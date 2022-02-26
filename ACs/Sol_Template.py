@@ -24,11 +24,11 @@
 
     3.1 Solution 1:
 
-        3.1.1 Steps:
+        (a) Steps:
 
-        3.1.2 Corner Cases:
+        (b) Corner Cases:
 
-        3.1.3 Complexity: Time - O(n), Space - O(1)
+        (c) Complexity: Time - O(n), Space - O(1)
     
 """
 

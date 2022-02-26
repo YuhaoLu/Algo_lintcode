@@ -29,19 +29,58 @@
         s consist of only digits and English letters.
 
     3.Solution:
-    3.1 Solution 2:
-        3.1.1 Steps:
-        abba
-        racecar
+        3.1 Solution 1(Bruteforce):
+            (a) Steps:
+            abba
+            racecar
 
-        Suppose the middle elem start from i, Check the two cases across the list
+            for 起点 O(n)
+                for 终点 O(n)
+                    is_palindromic(s[起点，终点])
 
-    
-        3.1.2 Corner Cases: 
-        nums.length < 2
+        
+            (b) Corner Cases: 
+            nums.length < 2
 
-        3.1.3 Complexity: Time - O(n), Space - O(1)
+            (c) Complexity: Time - O(n^3), Space - O(1)
 
+        3.2 Solution 2(Middle out):
+            (a) Steps:
+            abba
+            racecar
+
+            Suppose the middle elem start from i, Check the two cases across the list
+
+        
+            (b) Corner Cases: 
+            nums.length < 2
+
+            (c) Complexity: Time - O(n^2), Space - O(1)
+        
+        3.3 Solution 3(Dynamic Programming):
+            (a) Steps:
+            abba
+            racecar
+
+            区间型动态规划
+            is_palindrome[i][j] = is_palindrome[i+1][j-1]) && s[i] == s[j]
+
+        
+            (b) Corner Cases: 
+            nums.length < 2
+
+            (c) Complexity: Time - O(n^2), Space - O(n^2)
+        
+        3.4 Solution 4(Manacher's Algorithm):
+            (a) Steps:
+            abba
+            racecar
+
+        
+            (b) Corner Cases: 
+            nums.length < 2
+
+            (c) Complexity: Time - O(n), Space - O(1)
     4.Summary
 
     
@@ -51,58 +90,81 @@
 import sys
 sys.path.append('../.')
 from lib_test import metatest
+from pprint import pprint
 
 from typing import List, Tuple
 class Solution:
+    # Solution 1
+    def is_palindrome(self, s, left, right):
+        while left < right and s[left] == s[right]:
+            left += 1
+            right -= 1
+        return left >= right
+
     @metatest
     def longestPalindrome(self, s: str) -> str:
-        if len(s) < 1:
-            return ""
-        start = 0
-        end = 0
-        for i in range(len(s)):
-            length1 = self.expandAroundCenter(s, i, i)
-            length2 = self.expandAroundCenter(s, i, i + 1)
-            length = max(length1, length2)
-            if length > end - start:
-                start = int(i - (length - 1) / 2)
-                end = int(i + length // 2)
-        return s[start:end + 1]
+        # 输入异常检测
+        if s is None:
+            return None
+        
+        for length in range(len(s), 0, -1):
+            for i in range(len(s) - length + 1):
+                if self.is_palindrome(s, i, i + length -1):
+                    return s[i: i+length]
+        return ""
 
-    def expandAroundCenter(self, s:str, i: int, j: int) -> int:
-        while i >= 0 and j < len(s) and s[i] == s[j]:
-            i -= 1
-            j += 1
-        return j - i - 1
+    # Solution 2
+    def get_palindrome_from(self, s, left, right):
+        while left >= 0 and right < len(s) and s[left] == s[right]:
+            left -= 1
+            right += 1
+        print(s[left+1: right])
+        return s[left + 1: right]
+
 
     @metatest
     def longestPalindrome2(self, s: str) -> str:
-				#init table
-        table = [[0 for x in range(len(s))] for x in range(len(s))]
-        longest_index = [0,0]
-        longest_len = 1
-        for i in range(len(s)):
-            table[i][i] = 1
-				#fill the table in diagnal fashion
-        for i in range(0,len(s)):
-            for front in range(0,len(s)-1-i):
-                back = front + i+1
-                if s[front] == s[back]:
-										#handle base case when len is two
-                    if back-front+1 == 2:
-                        table[front][back] = 2
-										#check if subseq is a palindrome 
-                    elif table[front+1][back-1]!=0:
-                        table[front][back] = table[front+1][back-1] + 2
-										#check if cur palindrome is longest
-                    if longest_len < table[front][back]:
-                        longest_index=[front,back]
-                        longest_len = back-front+1
-                else:
-                    table[front][back] = 0
-        return s[longest_index[0]:longest_index[1]+1]
+        if not s:
+            return s
+
+        str_palindrome = ""
+        for mid in range(len(s)):
+            # a b a
+            str_palindrome1 = self.get_palindrome_from(s, mid, mid)
+            # a b b a
+            str_palindrome2 = self.get_palindrome_from(s, mid, mid + 1)
+            str_palindrome = str_palindrome1 if len(str_palindrome) < len(str_palindrome1) else str_palindrome
+            str_palindrome = str_palindrome2 if len(str_palindrome) < len(str_palindrome2) else str_palindrome
+
+        return str_palindrome
+
+    # Solution 3
+    @metatest
+    def longestPalindrome3(self, s: str) -> str:
+        if not s:
+            return ""
+        
+        n = len(s)
+        is_palindrome = [[False] * n for _ in range(n)]
+        for i in range(n):
+            is_palindrome[i][i] = True
+        
+        for i in range(1, n):
+            is_palindrome[i][i-1] = True # ???????
+        pprint(is_palindrome)
+        
+        start, longest = 0, 1
+        for length in range(2, n + 1):
+            for i in range(n - length + 1):
+                j = i + length - 1
+                is_palindrome[i][j] = is_palindrome[i + 1][j - 1] and s[i] == s[j]
+                longest = length
+                start = i
+            return s[start: start + longest]
 
 if __name__ == '__main__':
     s = "abcabcbb"
     sol = Solution()
     sol.longestPalindrome(s)
+    sol.longestPalindrome2(s)
+    sol.longestPalindrome3(s)

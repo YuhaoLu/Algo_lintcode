@@ -4,22 +4,62 @@ from datetime import timedelta
 def check_time(elapsed):
     return str(timedelta(seconds=elapsed))
 
-def metatest(f):
-    def wrap(*args, **kwargs):
-        print('=' * 64)
-        print('Function: {:s}'.format(f.__name__))
-        
-        time1 = time.time()
-        res = f(*args, **kwargs)
-        time2 = time.time()
-        elapsed = time2 - time1
+# decorator to trace execution of recursive function
+# https://www.codementor.io/@dmitrybelaventsev/python-trace-recursive-function-tkq79m4so
+def trace(func):
 
-        print('\nInput:  {} '.format(','.join([str(i) for i in args[1:]])))
-        print('Output: {} {}'.format(res, ','.join([str(i) for i in args[1:]])))
-        print('Function took {} s'.format( check_time(elapsed)))
-        return elapsed, res
-    return wrap
+    # time1 = time.time()
 
+    # cache func name, which will be used for trace print
+    func_name = func.__name__
+    # define the separator, which will indicate current recursion level (repeated N times)
+    separator = '|   '
+
+    # current recursion depth
+    trace.recursion_depth = 0
+
+    from functools import wraps
+    @wraps(func)
+    def traced_func(*args, **kwargs):
+
+        # repeat separator N times (where N is recursion depth)
+        # `map(str, args)` prepares the iterable with str representation of positional arguments
+        # `", ".join(map(str, args))` will generate comma-separated list of positional arguments
+        # `"x"*5` will print `"xxxxx"` - so we can use multiplication operator to repeat separator
+        print(f'{separator * trace.recursion_depth}├-- {func_name}({", ".join(map(str, args))})')
+        # we're diving in
+        trace.recursion_depth += 1
+        result = func(*args, **kwargs)
+        # going out of that level of recursion
+        trace.recursion_depth -= 1
+        # result is printed on the next level
+        print(f'{separator * (trace.recursion_depth + 1)}└-- return {result} (input: {", ".join(map(str, args))})')
+
+        return result
+
+    # time2 = time.time()
+    # elapsed = time2 - time1
+    # print('\nFunction took {} s'.format( check_time(elapsed)))
+    return traced_func
+
+def metatest(class_func=False):
+    def decorator(f):
+        def wrap(*args, **kwargs):
+            print('=' * 64)
+            print('Function: {:s}'.format(f.__name__))
+            
+            time1 = time.time()
+            res = f(*args, **kwargs)
+            time2 = time.time()
+            elapsed = time2 - time1
+
+            param_index = 1 if class_func else 0 
+            print('\nInput:  {} '.format(','.join([str(i) for i in args[param_index:]])))
+            print('Output: {} {}'.format(res, ','.join([str(i) for i in args[param_index:]])))
+            print('Function took {} s'.format( check_time(elapsed)))
+            return elapsed, res
+        return wrap
+    return decorator   
 class ListNode:
     def __init__(self, val=0, next=None):
         self.val = val
@@ -57,6 +97,8 @@ class TreeNode:
         self.left = left
         self.right = right
     def __str__(self):
+        return str(self.val)
+    def __repr__(self):
         return str(self.val)
 
 def createTree(li_treeNode):
@@ -152,3 +194,12 @@ def printTree(treeNode):
         return lines, pos, width
 
     print('\n'.join(recurse(treeNode)[0]))
+
+if __name__ == '__main__':
+    @trace
+    def factorial(n):
+        if n == 1: return 1
+        else: return n * factorial(n-1)
+
+    # this will print all the recursion trace and the result at the bottom
+    print(factorial(7))
